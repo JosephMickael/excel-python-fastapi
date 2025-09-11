@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# Connexion frontend angular
 origins = [
     "http://localhost:4200",
 ]

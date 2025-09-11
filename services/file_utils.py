@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+import unicodedata
+import re
+import math, re, unicodedata
+import pandas as pd
+
 
 # Mapping des colonnes standard (normalisation des colonnes)
 MAPPING = {
@@ -82,6 +87,89 @@ def harmonize_name(df, first_name_col=None, last_name_col=None, full_name_col=No
         raise ValueError("Il faut spécifier soit full_name_col soit first_name_col et last_name_col")
     return df
 
+
+def to_str(x):
+    """Convertit proprement en str pour éviter les None / NaN."""
+    if x is None or (isinstance(x, float) and math.isnan(x)):
+        return ""
+    return str(x)
+
+def strip_accents(s: str) -> str:
+    """Supprime les accents pour comparaison insensible."""
+    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
+def norm_basic_for_cmp(x) -> str:
+    """
+    Normalisation générique pour comparaison :
+    - cast en str
+    - trim
+    - supprime accents
+    - insensible casse
+    - espaces multiples -> un espace
+    - retire ponctuation légère
+    """
+    s = to_str(x).strip()
+    if not s:
+        return ""
+    s = strip_accents(s)
+    s = re.sub(r"\s+", " ", s)
+    s = re.sub(r"[.,;:/\\]+", " ", s)
+    s = re.sub(r"[\-_]", "", s)
+    return s.casefold().strip()
+
+def tokens_name(x) -> set:
+    """Découpe un nom en tokens normalisés."""
+    s = norm_basic_for_cmp(x)
+    return set(t for t in s.split(" ") if t)
+
+def map_sexe(val_norm: str) -> str:
+    """Uniformise les valeurs de sexe."""
+    if val_norm in {"f", "feminin", "féminin"}:
+        return "F"
+    if val_norm in {"m", "masculin"}:
+        return "M"
+    return val_norm.upper()
+
+def values_equal_smart(col: str, v1, v2) -> bool:
+    """Comparaison intelligente par colonne."""
+    if to_str(v1) == "" and to_str(v2) == "":
+        return True
+
+    # Numériques
+    try:
+        f1 = float(to_str(v1).replace(",", "."))
+        f2 = float(to_str(v2).replace(",", "."))
+        if math.isfinite(f1) and math.isfinite(f2):
+            return abs(f1 - f2) < 1e-12
+    except Exception:
+        pass
+
+    col_norm = strip_accents(col).casefold().strip()
+
+    # Sexe
+    if col_norm in {"sexe", "genre", "sex"}:
+        return map_sexe(norm_basic_for_cmp(v1)) == map_sexe(norm_basic_for_cmp(v2))
+
+    # Identifiants
+    if any(k in col_norm for k in ["id_personne", "idposte", "id poste", "id_emploi", "id emploi"]):
+        a = re.sub(r"\s+", "", norm_basic_for_cmp(v1))
+        b = re.sub(r"\s+", "", norm_basic_for_cmp(v2))
+        return a == b
+
+    # Noms / prénoms
+    if col_norm in {"nom_prenom", "nom prenom", "nom", "prenom", "prénom", "nom_de_famille"}:
+        t1, t2 = tokens_name(v1), tokens_name(v2)
+        if not t1 or not t2:
+            return norm_basic_for_cmp(v1) == norm_basic_for_cmp(v2)
+        inter = len(t1 & t2)
+        union = len(t1 | t2)
+        if inter > 0 and (t1.issubset(t2) or t2.issubset(t1) or inter / union >= 0.6):
+            return True
+        return False
+
+    # Par défaut
+    return norm_basic_for_cmp(v1) == norm_basic_for_cmp(v2)
+
 def compare_files(df1, df2, key="matricule"):
     report = []
 
@@ -140,22 +228,30 @@ def compare_files(df1, df2, key="matricule"):
 
 
 
-    # Différences ligne par ligne pour les clés communes
-    common_keys = df1[key].isin(df2[key])
+    # Différences colonne par colonne pour les clés communes
+    # common_keys = df1[key].isin(df2[key])
+    common_keys = df1[key].isin(df2[key]) & df1[key].notna()
     diff_line_by_line = []
 
     for k in df1[key][common_keys]:
-        row1 = df1[df1[key] == k].iloc[0]
-        row2 = df2[df2[key] == k].iloc[0]
+        rows1 = df1[df1[key] == k]
+        rows2 = df2[df2[key] == k]
+
+        if rows1.empty or rows2.empty:
+            continue 
+
+        row1 = rows1.iloc[0]
+        row2 = rows2.iloc[0]
+        
         for col in common_cols:
             val1 = safe_value(row1[col]) if col in row1 else None
             val2 = safe_value(row2[col]) if col in row2 else None
-            if val1 != val2:
+            if not values_equal_smart(col, val1, val2):
                 diff_line_by_line.append({
                     "key": safe_value(k),
                     "column": col,
-                    "df1_value": val1,
-                    "df2_value": val2
+                    "df1_value": safe_value(val1),
+                    "df2_value": safe_value(val2),
                 })
     if diff_line_by_line:
         report_dict['diff_line_by_line'] = diff_line_by_line

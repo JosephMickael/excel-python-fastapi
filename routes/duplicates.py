@@ -26,11 +26,8 @@ async def detect_duplicates(file: UploadFile = File(...)):
 
     # Détection des doublons
     duplicates = df[df.duplicated(subset=cols_to_check, keep=False)]
+    grouped = duplicates.groupby(cols_to_check).size().reset_index(name="nombre_doublons")
 
-    # Retourne les lignes doublons en JSON compatible
-    result = [
-        {col: safe_value(row[col]) for col in cols_to_check if col in row}
-        for idx, row in duplicates.iterrows()
-    ]
+    result = grouped.to_dict(orient="records")
     
     return {"duplicates": result}

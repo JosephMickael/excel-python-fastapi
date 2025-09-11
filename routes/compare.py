@@ -11,6 +11,7 @@ async def compare_endpoint(file1: UploadFile = File(...), file2: UploadFile = Fi
         df1 = read_file(file1)
         df2 = read_file(file2)
     except Exception as e:
+        print("Erreur backend:", e)
         raise HTTPException(status_code=400, detail=f"Erreur lecture fichier: {e}")
 
     df1 = harmonize_columns(df1)
