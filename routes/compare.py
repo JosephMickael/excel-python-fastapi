@@ -20,4 +20,4 @@ async def compare_endpoint(file1: UploadFile = File(...), file2: UploadFile = Fi
     df2 = unify_name_column(df2)
 
     report = compare_files(df1, df2, key="matricule")
-    return {"report": report}  # doit être JSON serializable
+    return {"report": report}

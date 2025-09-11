@@ -3,7 +3,7 @@ from services.file_utils import read_file, harmonize_columns, unify_name_column,
 
 router = APIRouter()
 
-@router.post("/harmonize")
+@router.post("/")
 async def harmonize(file: UploadFile = File(...)):
     df = read_file(file)
     df = harmonize_columns(df)

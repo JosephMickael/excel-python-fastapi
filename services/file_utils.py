@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-# Mapping des colonnes standard 
+# Mapping des colonnes standard (normalisation des colonnes)
 MAPPING = {
     "statut": ["statut", "Statut du travail"],
     "matricule": ["matricule", "ID (Matricule Num)", "ID empl.", "ID employé"],
@@ -111,22 +111,34 @@ def compare_files(df1, df2, key="matricule"):
             for row in missing_in_df1.to_dict(orient="records")
         ]
 
+    # Convertit un set en valeur unique si un seul élément, sinon en liste
+    def to_scalar_or_list(values):
+        values = list(values)
+        values = [str(v).strip() for v in values]  # 🔑 conversion en texte
+        if len(values) == 1:
+            return values[0]
+        return values
+
     # Même nom/prénom mais matricules différents
-    df1_map = df1.set_index('nom_prenom')[key].to_dict()
-    df2_map = df2.set_index('nom_prenom')[key].to_dict()
     same_name_diff_matricule = []
 
-    for name in set(df1_map.keys()).intersection(df2_map.keys()):
-        mat1 = df1_map[name]
-        mat2 = df2_map[name]
-        if mat1 != mat2:
+    df1_grouped = df1.groupby("nom_prenom")[key].unique()
+    df2_grouped = df2.groupby("nom_prenom")[key].unique()
+
+    for name in set(df1_grouped.index).intersection(df2_grouped.index):
+        mat1_list = set([str(v).strip() for v in df1_grouped[name]])
+        mat2_list = set([str(v).strip() for v in df2_grouped[name]])
+        if mat1_list != mat2_list:  # maintenant vraie différence uniquement
             same_name_diff_matricule.append({
-                "nom_prenom": name,
-                f"{key}_df1": mat1,
-                f"{key}_df2": mat2
+                "nom_prenom": safe_value(name),
+                f"{key}_df1": to_scalar_or_list(mat1_list),
+                f"{key}_df2": to_scalar_or_list(mat2_list)
             })
+
     if same_name_diff_matricule:
         report_dict['same_name_diff_matricule'] = same_name_diff_matricule
+
+
 
     # Différences ligne par ligne pour les clés communes
     common_keys = df1[key].isin(df2[key])
