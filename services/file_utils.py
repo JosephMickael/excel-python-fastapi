@@ -73,6 +73,31 @@ def _clean_col(c: str) -> str:
     c = re.sub(r"\s+", " ", c).strip()
     return c
 
+def parse_date(val):
+    """
+    Parse une date en gérant plusieurs formats (%Y-%m-%d, %Y-%m-%d %H:%M:%S, %d/%m/%Y).
+    Retourne NaT si impossible.
+    """
+    if pd.isna(val) or str(val).strip() == "":
+        return None
+
+    s = str(val).strip()
+
+    # Détection rapide ISO (commence par 4 chiffres -> année)
+    if re.match(r"^\d{4}-\d{2}-\d{2}", s):
+        try:
+            return pd.to_datetime(s, errors="raise", dayfirst=False)
+        except Exception:
+            pass
+
+    # Format français ou ambigu -> dayfirst=True
+    try:
+        return pd.to_datetime(s, errors="raise", dayfirst=True)
+    except Exception:
+        pass
+
+    # Dernière chance : parsing libre (tolérant)
+    return pd.to_datetime(s, errors="coerce")
 
 
 """
@@ -284,7 +309,8 @@ def normalize_date(val):
     if val is None or str(val).strip() == "":
         return None
     try:
-        dt = pd.to_datetime(val, errors="coerce")
+        # dt = pd.to_datetime(val, errors="coerce")
+        dt = parse_date(val)
         if pd.isna(dt):
             return None
         return dt.date()  # AAAA-MM-JJ
