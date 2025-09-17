@@ -7,6 +7,10 @@ app = FastAPI()
 # Connexion frontend angular
 origins = [
     "http://localhost:4200",
+    "https://root2rise-nsc-formation-dev.ca",
+    "http://208.109.241.173",
+    "http://208.109.231.28",
+    "http://www.root2rise-nsc-formation-dev.ca"
 ]
 
 app.add_middleware(
