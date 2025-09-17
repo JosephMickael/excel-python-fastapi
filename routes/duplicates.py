@@ -1,9 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.file_utils import read_file, unify_name_column
-from services.duplicates_utils import harmonize_columns, normalize_column
+from services.file_utils import read_file
+from services.duplicates_utils import harmonize_columns, unify_name_column
 import numpy as np
 from fastapi.encoders import jsonable_encoder
-import pandas as pd
 
 router = APIRouter()
 
@@ -37,7 +36,7 @@ async def detect_duplicates(file: UploadFile = File(...)):
     # Extraire les doublons
     duplicates = df[df.duplicated(subset=cols_to_check, keep=False)]
     duplicates = duplicates.replace({np.nan: None})
-
+    
     result = []
 
     # Groupement par colonnes clés
