@@ -25,7 +25,7 @@ MAPPING = {
     "matricule": ["matricule", "id (matricule num)", "id empl.", "id employé", "id employe", '"id empl."', "id matricule num", "id_ matricule_num", "id_empl"],
     "sexe": ["sexe", "genre", "sex"],
     "id_personne": ["id personne", "person id"],
-    "nom_prenom": ["nom & prenom", "nom utilisateur", "nom affichage interne", "nom affichage externe", "nom_ _prenom"],
+    "nom_prenom": ["nom & prenom", "nom utilisateur", "nom affichage interne", "nom affichage externe", "nom_ _prenom", "Travailleur"],
     "nom_de_famille": ["nom de famille", "nom"],
     "prénom": ["prénom", "prenom", "deuxieme prenom"],  # garde séparé
     "date_naissance": ["date naissance", "date de naissance", "date naiss.", "naissance", "date_de_naissance", "date_naissance", "date_naiss"]
