@@ -21,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],           
 )
 
-app.include_router(compare.router, prefix="/compare", tags=["compare"])
-app.include_router(harmonize.router, prefix="/harmonize", tags=["harmonize"])
-app.include_router(duplicates.router, prefix="/duplicates", tags=["duplicates"])
+app.include_router(compare.router, prefix="/fastapi/compare", tags=["compare"])
+app.include_router(harmonize.router, prefix="/fastapi/harmonize", tags=["harmonize"])
+app.include_router(duplicates.router, prefix="/fastapi/duplicates", tags=["duplicates"])
 

@@ -636,8 +636,11 @@ def find_differences_optimized(df1, df2, common_keys, common_cols, key):
             common_idx = series1.index.intersection(series2.index)
             
             for idx in common_idx:
-                val1 = safe_value(series1.loc[idx])
-                val2 = safe_value(series2.loc[idx]) 
+                # val1 = safe_value(series1.loc[idx])
+                # val2 = safe_value(series2.loc[idx]) 
+                val1 = safe_value(series1.loc[idx].iloc[0] if isinstance(series1.loc[idx], pd.Series) else series1.loc[idx])
+                val2 = safe_value(series2.loc[idx].iloc[0] if isinstance(series2.loc[idx], pd.Series) else series2.loc[idx])
+
                 
                 if not values_equal_smart(col, val1, val2):
                     differences.append({
