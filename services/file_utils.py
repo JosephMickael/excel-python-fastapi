@@ -722,6 +722,9 @@ def find_differences_3files_optimized(df1, df2, df3, common_keys, common_cols, k
 
 # Fin new compare_files
 
+
+
+# MINE VISITS
 def clean_report(obj):
     """Nettoie récursivement le report pour remplacer NaN/NaT/inf par None."""
     if isinstance(obj, dict):
@@ -732,3 +735,38 @@ def clean_report(obj):
         return None
     else:
         return obj
+    
+def read_topview_file(file):
+    """
+    Lecture tolérante d'un fichier TopView (CSV).
+    - Détection automatique du séparateur
+    - Ignore les lignes corrompues (on_bad_lines="skip")
+    - Force tout en string pour éviter les erreurs
+    """
+    filename = file.filename.lower()
+    if filename.endswith(".csv"):
+        return pd.read_csv(
+            file.file,
+            sep=None,              # détection auto ("," ou ";")
+            engine="python",       # moteur permissif
+            on_bad_lines="skip",   # saute les lignes corrompues
+            encoding="utf-8",
+            dtype=str
+        )
+    elif filename.endswith(".xlsx") or filename.endswith(".xls"):
+        # au cas où un TopView sortirait en Excel
+        return pd.read_excel(file.file, dtype=str)
+    else:
+        raise ValueError("Format de fichier TopView non supporté")
+    
+    
+def normalize_name(s):
+    if pd.isna(s):
+        return ""
+    s = str(s).strip().upper()
+    s = s.replace(",", " ")  
+    s = s.replace("-", " ")  
+    s = " ".join(s.split()) 
+    # enlever les accents
+    s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+    return s
