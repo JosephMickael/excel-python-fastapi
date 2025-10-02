@@ -737,19 +737,13 @@ def clean_report(obj):
         return obj
     
 def read_topview_file(file):
-    """
-    Lecture tolérante d'un fichier TopView (CSV).
-    - Détection automatique du séparateur
-    - Ignore les lignes corrompues (on_bad_lines="skip")
-    - Force tout en string pour éviter les erreurs
-    """
     filename = file.filename.lower()
     if filename.endswith(".csv"):
         return pd.read_csv(
             file.file,
-            sep=None,              # détection auto ("," ou ";")
-            engine="python",       # moteur permissif
-            on_bad_lines="skip",   # saute les lignes corrompues
+            sep=None,           
+            engine="python",    
+            on_bad_lines="skip",   
             encoding="utf-8",
             dtype=str
         )

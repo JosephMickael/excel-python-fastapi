@@ -14,7 +14,7 @@ async def mine_visits(
     try:
         # Lecture des fichiers
         df_ifs = read_file(file_ifs)  # IFS
-        df_topview = read_topview_file(file_topview)  # TopView (CSV "tolérant")
+        df_topview = read_topview_file(file_topview)  # TopView
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erreur lecture fichier: {e}")
 
@@ -44,7 +44,7 @@ async def mine_visits(
     # Renommer pour uniformité
     df_topview.rename(columns={"name": "Name", "tagondatetime": "TagOnDatetime"}, inplace=True)
 
-    # Extraire nom + prénom depuis Name si besoin
+    # Extraire nom + prénom si nécessaire
     if "nom_prenom" not in df_topview.columns:
         topview_names = df_topview["Name"].str.split("-", n=1, expand=True)
         df_topview["Nom"] = topview_names[0].str.strip().str.upper()
@@ -57,16 +57,10 @@ async def mine_visits(
     # Filtrer visites sur la dernière année
     cutoff_date = datetime.now() - timedelta(days=365)
     df_topview = df_topview[df_topview["TagOnDatetime"] >= cutoff_date]
-    
 
-    # Sur IFS
+    # Normalisation des noms
     df_ifs["nom_prenom"] = df_ifs["nom_prenom"].apply(normalize_name)
-
-    # Sur TopView
     df_topview["nom_prenom"] = df_topview["nom_prenom"].apply(normalize_name)
-
-    print("IFS normalisés:", df_ifs["nom_prenom"].head(10).tolist())
-    print("TopView normalisés:", df_topview["nom_prenom"].head(10).tolist())
 
     # Merge (croisement)
     merged = pd.merge(
@@ -76,16 +70,16 @@ async def mine_visits(
         on="nom_prenom"
     )
 
-    # Détection de la bonne colonne ID dans IFS
+    # Détection de la colonne ID dans IFS
     id_col_candidates = [c for c in df_ifs.columns if c.strip().lower() in ["id_personne", "id"]]
     id_col = id_col_candidates[0] if id_col_candidates else None
 
     # Colonnes de regroupement
-    group_cols = ["nom_prenom"]
+    group_cols = ["nom_prenom", "matricule", "statut_d employe", "nom_d organisation"]
     if id_col:
         group_cols.append(id_col)
 
-    # Regroupement des visites
+    # Regroupement
     visits = (
         merged.groupby(group_cols, dropna=False)
         .agg(
@@ -96,11 +90,17 @@ async def mine_visits(
     )
 
     # Transformer en JSON
-    result = visits.to_dict(orient="records")
-
-    # Convertir les dates pour éviter l'erreur Timestamp
-    for r in result:
-        if isinstance(r.get("derniere_visite"), pd.Timestamp):
-            r["derniere_visite"] = r["derniere_visite"].strftime("%Y-%m-%d %H:%M:%S")
+    result = []
+    for _, row in visits.iterrows():
+        r = {
+            "nom_prenom": row["nom_prenom"],
+            "id_personne": row[id_col] if id_col and id_col in row else None,
+            "matricule": row["matricule"],
+            "statut": row["statut_d employe"],
+            "departement": row["nom_d organisation"],
+            "nb_visites": int(row["nb_visites"]),
+            "derniere_visite": row["derniere_visite"].strftime("%Y-%m-%d %H:%M:%S") if pd.notna(row["derniere_visite"]) else None
+        }
+        result.append(r)
 
     return ORJSONResponse(content={"visites": result})
