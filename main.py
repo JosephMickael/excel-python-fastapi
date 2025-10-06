@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes import compare, harmonize, duplicates, mine_visits
+from routes import compare, harmonize, duplicates, listes_douteux, mine_visits
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -25,4 +25,5 @@ app.include_router(compare.router, prefix="/compare", tags=["compare"])
 app.include_router(harmonize.router, prefix="/harmonize", tags=["harmonize"])
 app.include_router(duplicates.router, prefix="/duplicates", tags=["duplicates"])
 app.include_router(mine_visits.router, prefix="/mine-visits", tags=["mine-visits"])
+app.include_router(listes_douteux.router, prefix="/listes-douteux", tags=["douteux"])
 

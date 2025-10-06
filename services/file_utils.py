@@ -764,3 +764,23 @@ def normalize_name(s):
     # enlever les accents
     s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
     return s
+
+
+def df_to_records(df: pd.DataFrame):
+    """
+    Convertit un DataFrame en liste de dicts JSON-safe.
+    - Timestamp -> str
+    - NaN -> None
+    """
+    records = []
+    for row in df.to_dict(orient="records"):
+        clean_row = {}
+        for col, val in row.items():
+            if isinstance(val, pd.Timestamp):
+                clean_row[col] = val.strftime("%Y-%m-%d %H:%M:%S")
+            elif pd.isna(val):
+                clean_row[col] = None
+            else:
+                clean_row[col] = str(val) if isinstance(val, (pd.Period, pd.Interval)) else val
+        records.append(clean_row)
+    return records
