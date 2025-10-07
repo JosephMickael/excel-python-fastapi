@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import ORJSONResponse
-import asyncio
 from services.douteux_utils import find_doubtful_matches_main
 
 router = APIRouter()
@@ -11,13 +10,10 @@ async def detect_douteux(
     file_topview: UploadFile = File(...)
 ):
     """
-    Endpoint asynchrone pour détecter les correspondances douteuses entre IFS et TopView,
-    sans bloquer les autres routes FastAPI.
+    Endpoint indépendant pour détecter les correspondances douteuses entre IFS et TopView
     """
     try:
-        # Exécute le traitement lourd dans un thread séparé
-        result = await asyncio.to_thread(find_doubtful_matches_main, file_ifs, file_topview)
+        result = find_doubtful_matches_main(file_ifs, file_topview)
         return ORJSONResponse(content=result)
-
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
